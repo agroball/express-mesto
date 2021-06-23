@@ -38,7 +38,7 @@ module.exports.deleteCard = (req, res) => {
       res.status(200).send(card);
     })
     .catch((err) => {
-      if (err.message === 'CastError') {
+      if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Невалидный id' });
       } else if (err.message === 'NotFound') {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Нет такой карточки' });
@@ -58,7 +58,7 @@ module.exports.likeCard = (req, res) => {
       }
     })
     .catch((err) => {
-      if (err.message === 'CastError') {
+      if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Невалидный id' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
@@ -76,7 +76,7 @@ module.exports.dislikeCard = (req, res) => {
       }
     })
     .catch((err) => {
-      if (err.message === 'CastError') {
+      if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Невалидный id' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });

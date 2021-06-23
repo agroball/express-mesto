@@ -26,12 +26,14 @@ module.exports.getUsers = (req, res) => {
 
 module.exports.getUserId = (req, res) => {
   User.findById(req.params.userId)
-    .onFail(new Error('NotValidId'))
+    .orFail(new Error('NotValidId'))
     .then((users) => {
       res.status(200).send({ data: users });
     })
     .catch((err) => {
-      if (err.message === 'NotValidId') {
+      if (err.name === 'CastError') {
+        res.status(ERROR_CODE).send({ message: 'Невалидный id' });
+      } else if (err.message === 'NotValidId') {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Пользователь по указанному _id не найден' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
@@ -54,7 +56,9 @@ module.exports.createUser = (req, res) => {
 };
 
 module.exports.updateUser = (req, res) => {
-  User.findByIdAndUpdate(req.user._id, opts)
+  const { name, about } = req.body;
+
+  User.findByIdAndUpdate(req.user._id, { name, about }, opts)
     .then((user) => {
       if (!user) {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Пользователь с указанным _id не найден' });
@@ -63,7 +67,7 @@ module.exports.updateUser = (req, res) => {
       }
     })
     .catch((err) => {
-      if (err) {
+      if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
@@ -74,7 +78,7 @@ module.exports.updateUser = (req, res) => {
 module.exports.updateAvatar = (req, res) => {
   const { avatar } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, opts, { avatar })
+  User.findByIdAndUpdate(req.user._id, { avatar }, opts)
     .then((user) => {
       if (!user) {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Пользователь с указанным _id не найден' });
@@ -83,8 +87,8 @@ module.exports.updateAvatar = (req, res) => {
       }
     })
     .catch((err) => {
-      if (err) {
-        res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
+      if (err.name === 'CastError') {
+        res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
       }
