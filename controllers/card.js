@@ -62,7 +62,8 @@ module.exports.likeCard = (req, res) => {
         res.status(ERROR_CODE).send({ message: 'Невалидный id' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
-      }})
+      }
+    });
 };
 
 module.exports.dislikeCard = (req, res) => {
@@ -80,5 +81,6 @@ module.exports.dislikeCard = (req, res) => {
         res.status(ERROR_CODE).send({ message: 'Невалидный id' });
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
-      }})
-}
+      }
+    });
+};
