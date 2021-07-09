@@ -3,6 +3,7 @@ const User = require('../models/user');
 const ERROR_CODE = 400;
 const ERROR_CODE_INFOUND = 404;
 const ERROR_CODE_SERV = 500;
+const ERROR_CODE_AUTH = 401;
 
 const opts = { new: true, runValidators: true };
 
@@ -42,9 +43,9 @@ module.exports.getUserId = (req, res) => {
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+  const { name, about, avatar, email, password } = req.body;
 
-  User.create({ name, about, avatar })
+  User.create({ name, about, avatar, email, password })
     .then((user) => res.send({ data: user }))
     .catch((err) => {
       if (err) {
@@ -92,5 +93,21 @@ module.exports.updateAvatar = (req, res) => {
       } else {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
       }
+    });
+};
+
+module.exports.login = (req, res) => {
+  const { email, password } = req.body;
+  return User.findUserByCredentials(email, password)
+    .then((user) => {
+      const token = jwt.sign({ _id: user._id }, 'super-strong-secret', { expiresIn: '7d' });
+      res.send({ token });
+    })
+    .catch((err) => {
+if (err.name === 'AuthError') {
+ res.status(ERROR_CODE_AUTH).send({ message: 'Невозможно авторизоваться' });
+} else {
+  res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+}
     });
 };
