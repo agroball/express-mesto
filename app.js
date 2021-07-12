@@ -19,12 +19,7 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
-app.use((req, res, next) => {
-  req.user = {
-    _id: '60c35a78e0346243e8f8a980', // вставьте сюда _id созданного в предыдущем пункте пользователя
-  };
-  next();
-});
+
 
 app.post('/signin', login);
 app.post('/signup', createUser);

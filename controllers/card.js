@@ -3,6 +3,7 @@ const Card = require('../models/card');
 const ERROR_CODE = 400;
 const ERROR_CODE_INFOUND = 404;
 const ERROR_CODE_SERV = 500;
+const ERROR_CODE_FORB = 403;
 
 module.exports.getCard = (req, res) => {
   Card.find({})
@@ -24,28 +25,38 @@ module.exports.createCard = (req, res) => {
     .then((card) => res.status(200).send({ data: card }))
     .catch((err) => {
       if (err) {
-        res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
+       throw res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании'});
       } else {
-        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+        throw res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
       }
     });
 };
 
-module.exports.deleteCard = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
-    .orFail(new Error('NotFound'))
-    .then((card) => {
-      res.status(200).send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        res.status(ERROR_CODE).send({ message: 'Невалидный id' });
-      } else if (err.message === 'NotFound') {
-        res.status(ERROR_CODE_INFOUND).send({ message: 'Нет такой карточки' });
-      } else {
-        res.status(ERROR_CODE_SERV).send({ message: 'Произошла ошибка' });
-      }
-    });
+
+module.exports.deleteCard = (req,res, next) => {
+Card.findById(req.params.cardId)
+.then ((card) => {
+ if(card === null) {
+   throw res.status(ERROR_CODE).send({ message: 'Карточка с указанным _id не найдена'});
+ }
+ if (card.owner !== req.user._id) {
+   throw res.status(ERROR_CODE_FORB).send({ message: 'Вы можете удалить только свою карточку'});
+ }
+Card.findByIdAndRemove(req.params.cardId)
+.then((card) => {
+  res.status(200).send(card);
+})
+.catch((err) => {
+  if (err.name === 'CastError') {
+    res.status(ERROR_CODE).send({ message: 'Невалидный id' });
+  } else if (err.message === 'NotFound') {
+    res.status(ERROR_CODE_INFOUND).send({ message: 'Нет такой карточки' });
+  } else {
+    res.status(ERROR_CODE_SERV).send({ message: 'Произошла ошибка' });
+  }
+});
+})
+});
 };
 
 module.exports.likeCard = (req, res) => {

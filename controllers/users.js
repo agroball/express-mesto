@@ -1,9 +1,12 @@
 const User = require('../models/user');
+const bcrypt = require('bcryptjs');
 
 const ERROR_CODE = 400;
 const ERROR_CODE_INFOUND = 404;
 const ERROR_CODE_SERV = 500;
 const ERROR_CODE_AUTH = 401;
+const ERROR_CODE_FORB = 403;
+const ERROR_CODE_MONGO = 409;
 
 const opts = { new: true, runValidators: true };
 
@@ -44,14 +47,27 @@ module.exports.getUserId = (req, res) => {
 
 module.exports.createUser = (req, res) => {
   const { name, about, avatar, email, password } = req.body;
-
-  User.create({ name, about, avatar, email, password })
-    .then((user) => res.send({ data: user }))
+    bcrypt.hash(password, 10)
+    .then((hash) => User.create({
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
+    }))
+    .then((user) => res.send({
+      data: {
+        name: user.name,
+        about: user.about,
+        avatar: user.avatar,
+        email: user.email,
+      },
+    }))
     .catch((err) => {
-      if (err) {
-        res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
-      } else {
-        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+      if (err.name === 'MongoError' && err.code === 11000) {
+        res.status(ERROR_CODE_MONGO).send({ message: 'Пользователь с таким e-mail уже существует'});
+      } else if (err.name === 'AuthError') {
+        res.status(ERROR_CODE_AUTH).send({ message: 'Переданны некорректные данные пользователя'});
       }
     });
 };
@@ -59,7 +75,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { name, about }, opts)
+  User.findByIdAndUpdate(req.user._id, { { name: name.toString(), about: about.toString() } }, opts)
     .then((user) => {
       if (!user) {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Пользователь с указанным _id не найден' });
@@ -70,8 +86,10 @@ module.exports.updateUser = (req, res) => {
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
-      } else {
+      } else if {
         res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+      } else if (err.name === 'ForbiddenError') {
+        res.status(ERROR_CODE_FORB).send({ message: 'Неавторизированный пользователь' });
       }
     });
 };
