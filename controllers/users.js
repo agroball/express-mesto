@@ -1,5 +1,6 @@
-const User = require('../models/user');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const User = require('../models/user');
 
 const ERROR_CODE = 400;
 const ERROR_CODE_INFOUND = 404;
@@ -46,8 +47,10 @@ module.exports.getUserId = (req, res) => {
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar, email, password } = req.body;
-    bcrypt.hash(password, 10)
+  const {
+    name, about, avatar, email, password,
+  } = req.body;
+  bcrypt.hash(password, 10)
     .then((hash) => User.create({
       name,
       about,
@@ -65,9 +68,9 @@ module.exports.createUser = (req, res) => {
     }))
     .catch((err) => {
       if (err.name === 'MongoError' && err.code === 11000) {
-        res.status(ERROR_CODE_MONGO).send({ message: 'Пользователь с таким e-mail уже существует'});
+        res.status(ERROR_CODE_MONGO).send({ message: 'Пользователь с таким e-mail уже существует' });
       } else if (err.name === 'AuthError') {
-        res.status(ERROR_CODE_AUTH).send({ message: 'Переданны некорректные данные пользователя'});
+        res.status(ERROR_CODE_AUTH).send({ message: 'Переданны некорректные данные пользователя' });
       }
     });
 };
@@ -75,7 +78,7 @@ module.exports.createUser = (req, res) => {
 module.exports.updateUser = (req, res) => {
   const { name, about } = req.body;
 
-  User.findByIdAndUpdate(req.user._id, { { name: name.toString(), about: about.toString() } }, opts)
+  User.findByIdAndUpdate(req.user._id, { name: name.toString(), about: about.toString() }, opts)
     .then((user) => {
       if (!user) {
         res.status(ERROR_CODE_INFOUND).send({ message: 'Пользователь с указанным _id не найден' });
@@ -86,10 +89,10 @@ module.exports.updateUser = (req, res) => {
     .catch((err) => {
       if (err.name === 'CastError') {
         res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
-      } else if {
-        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
       } else if (err.name === 'ForbiddenError') {
         res.status(ERROR_CODE_FORB).send({ message: 'Неавторизированный пользователь' });
+      } else {
+        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
       }
     });
 };
@@ -122,10 +125,10 @@ module.exports.login = (req, res) => {
       res.send({ token });
     })
     .catch((err) => {
-if (err.name === 'AuthError') {
- res.status(ERROR_CODE_AUTH).send({ message: 'Невозможно авторизоваться' });
-} else {
-  res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
-}
+      if (err.name === 'AuthError') {
+        res.status(ERROR_CODE_AUTH).send({ message: 'Невозможно авторизоваться' });
+      } else {
+        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+      }
     });
 };

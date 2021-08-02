@@ -20,7 +20,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 
-
 app.post('/signin', login);
 app.post('/signup', createUser);
 
