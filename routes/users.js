@@ -11,7 +11,6 @@ usersRouter.get('/users/:userId', celebrate({
     userId: Joi.string().required().alphanum().length(24),
   }),
 }), auth, getUserId);
-usersRouter.post('/users', createUser);
 usersRouter.patch('/users/me', celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
