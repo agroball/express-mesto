@@ -2,11 +2,11 @@
 logs
 *.log
 npm-debug.log*
-.env
 
 # Dependency directory
 node_modules
 
+.env
 # Optional npm cache directory
 .npm
 
