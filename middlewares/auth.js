@@ -1,13 +1,14 @@
+require('dotenv').config();
 const jwt = require('jsonwebtoken');
 
-const ERROR_CODE_AUTH = 401;
+const { NODE_ENV, JWT_SECRET } = process.env;
 
 module.exports = (req, res, next) => {
   const { authorization } = req.headers;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
     return res
-      .status(ERROR_CODE_AUTH)
+      .status(statusCode)
       .send({ message: 'Необходима авторизация' });
   }
 
@@ -15,10 +16,10 @@ module.exports = (req, res, next) => {
   let payload;
 
   try {
-    payload = jwt.verify(token, 'some-secret-key');
+    payload = jwt.verify(token, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret');
   } catch (err) {
     return res
-      .status(ERROR_CODE_AUTH)
+      .status(statusCode)
       .send({ message: 'Необходима авторизация' });
   }
 
