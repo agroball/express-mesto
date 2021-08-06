@@ -3,10 +3,12 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
+const { Joi, celebrate } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const { login, createUser } = require('./controllers/users');
-const { Joi, celebrate} = require('celebrate');
+const auth = require('./middlewares/auth');
+const NotFound = require('./errors/notFound');
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
@@ -30,21 +32,22 @@ app.post('/signin', celebrate({
 }), login);
 
 app.post('/signup', celebrate({
-  body:Joi.object().keys({
+  body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(3),
     name: Joi.string().min(2).max(30),
-    avatar: Joi.string().error(new Error('Валидация не пройдена')),
+    avatar: Joi.string().required().pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/),
     about: Joi.string().min(2).max(30),
   }),
 }), createUser);
 
+app.use(auth);
+
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
 
-app.use((req, res) => {
-  res.status(404)
-    .send({ message: 'Запрашиваемый ресурс не найден' });
+app.use('*', () => {
+  throw new NotFound('Запрашиваемый ресурс не найден');
 });
 
 app.use((err, req, res, next) => {
@@ -52,7 +55,7 @@ app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
 
   res.status(statusCode).send({ message });
-  
+
   next();
 });
 
