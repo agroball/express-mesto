@@ -3,7 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
-const { Joi, celebrate } = require('celebrate');
+const { Joi, celebrate, errors } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const { login, createUser } = require('./controllers/users');
@@ -49,6 +49,8 @@ app.use('/', cardsRouter);
 app.use('*', () => {
   throw new NotFound('Запрашиваемый ресурс не найден');
 });
+
+app.use(errors());
 
 app.use((err, req, res, next) => {
   const { message } = err;

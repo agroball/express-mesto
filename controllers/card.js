@@ -1,9 +1,12 @@
 const cardSchema = require('../models/card');
+const NotFound = require('../errors/notFound');
+const Forbidden = require('../errors/forbiddenError');
+const ValidationError = require('../errors/validationError');
 
-const ERROR_CODE = 400;
-const ERROR_CODE_INFOUND = 404;
+const ERROR_CODE = 400; //validation 
+const ERROR_CODE_INFOUND = 404; // not found
 const ERROR_CODE_SERV = 500;
-const ERROR_CODE_FORB = 403;
+const ERROR_CODE_FORB = 403; //forbbiden
 
 module.exports.getCard = (req, res) => {
   cardSchema.find({})
@@ -11,9 +14,7 @@ module.exports.getCard = (req, res) => {
     .then((cards) => res.send({ data: cards }))
     .catch((err) => {
       if (err) {
-        res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании ' });
-      } else {
-        res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
+       throw new ValidationError('Переданы некорректные данные при создании');
       }
     });
 };
@@ -22,28 +23,26 @@ module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
 
   cardSchema.create({ name, link, owner: req.user._id })
-    .then((card) => res.status(200).send({ data: card }))
+    .then((card) => res.send({ data: card }))
     .catch((err) => {
       if (err) {
-        throw res.status(ERROR_CODE).send({ message: 'Переданы некорректные данные при создании' });
-      } else {
-        throw res.status(ERROR_CODE_SERV).send({ message: 'Ошибка по умолчанию' });
-      }
-    });
+        throw new ValidationError('Переданы некорректные данные при создании');
+    }
+})
 };
 
 module.exports.deleteCard = (req, res) => {
   cardSchema.findById(req.params.cardId)
     .then((card) => {
       if (card === null) {
-        throw res.status(ERROR_CODE).send({ message: 'Карточка с указанным _id не найдена' });
+        throw new ValidationError('Карточка с указанным _id не найдена');
       }
       if (card.owner !== req.user._id) {
-        throw res.status(ERROR_CODE_FORB).send({ message: 'Вы можете удалить только свою карточку' });
+        throw new Forbidden('Вы можете удалить только свою карточку');
       }
       cardSchema.findByIdAndRemove(req.params.cardId)
         .then((data) => {
-          res.status(200).send(data);
+          res.send(data);
         })
         .catch((err) => {
           if (err.name === 'CastError') {
