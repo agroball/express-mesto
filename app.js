@@ -3,12 +3,13 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const helmet = require('helmet');
-const { Joi, celebrate, errors } = require('celebrate');
+const { errors } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const { login, createUser } = require('./controllers/users');
 const auth = require('./middlewares/auth');
-const NotFound = require('./errors/notFound');
+const NotFoundError = require('./errors/notFound');
+const { validateNewUser, validateLogin } = require('./middlewares/validation');
 
 mongoose.connect('mongodb://localhost:27017/mestodb', {
   useNewUrlParser: true,
@@ -24,43 +25,29 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(helmet());
 
-app.post('/signin', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email().error(new Error('Email обязательное поле!')),
-    password: Joi.string().required().min(3).error(new Error('Пароль должен состоять минимум из 3 символов')),
-  }),
-}), login);
-
-app.post('/signup', celebrate({
-  body: Joi.object().keys({
-    email: Joi.string().required().email(),
-    password: Joi.string().required().min(3),
-    name: Joi.string().min(2).max(30),
-    avatar: Joi.string().required().pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/),
-    about: Joi.string().min(2).max(30),
-  }),
-}), createUser);
+app.post('/signin', validateLogin, login);
+app.post('/signup', validateNewUser, createUser);
 
 app.use(auth);
 
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
 
-app.use('*', () => {
-  throw new NotFound('Запрашиваемый ресурс не найден');
+app.use('*', (req, res, next) => { // eslint-disable-line
+  next(new NotFoundError('Ресурс не найден'));
 });
 
 app.use(errors());
 
-app.use((err, req, res, next) => {
-  const { message } = err;
-  const statusCode = err.statusCode || 500;
+app.use((err, req, res, next) => {  // eslint-disable-line
 
-  res.status(statusCode).send({ message });
+  const { statusCode = 500, message } = err;
 
-  next();
+  res.status(statusCode).send({
+    message: statusCode === 500
+      ? 'На сервере произошла ошибка'
+      : message,
+  });
 });
 
-app.listen(PORT, () => {
-  console.log(`App listening on port ${PORT}`);
-});
+app.listen(PORT);
