@@ -1,33 +1,33 @@
 const cardSchema = require('../models/card');
+const ValidationError = require('../errors/validationError');
 const NotFound = require('../errors/notFound');
 const Forbidden = require('../errors/forbiddenError');
-const ValidationError = require('../errors/validationError');
 
-module.exports.getCard = (req, res) => {
+module.exports.getCard = (req, res, next) => {
   cardSchema.find({})
-    .populate('user')
-    .then((cards) => res.send({ data: cards }))
-    .catch((err) => {
-      if (err) {
-        throw new ValidationError('Переданы некорректные данные при создании');
-      }
-    });
+    .then((cards) => {
+      res.status(200).send(cards);
+    })
+    .catch(next);
 };
 
-module.exports.createCard = (req, res) => {
+module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
 
   cardSchema.create({ name, link, owner: req.user._id })
-    .then((card) => res.send({ data: card }))
+    .then((card) => {
+      res.status(200).send(card);
+    })
     .catch((err) => {
-      if (err) {
-        throw new ValidationError('Переданы некорректные данные при создании');
+      if (err.name === 'ValidationError') {
+        next ( new ValidationError('Переданы некорректные данные при создании'));
       }
     });
 };
 
 module.exports.deleteCard = (req, res, next) => {
   cardSchema.findById(req.params.cardId)
+    .orFail(new Error('WrongCarId'))
     .then((card) => {
       if (card === null) {
         throw new NotFound('Карточка с указанным _id не найдена');
