@@ -1,30 +1,32 @@
 const cardSchema = require('../models/card');
-const ValidationError = require('../errors/validationError');
-const NotFound = require('../errors/notFound');
-const Forbidden = require('../errors/forbiddenError');
+const BadRequestError = require('../errors/BadRequest');
+const NotFoundError = require('../errors/notFound');
+const ForbiddenError = require('../errors/forbiddenError');
 
-module.exports.getCard = (req, res, next) => {
-  cardSchema.find({})
-    .then((cards) => {
-      res.status(200).send(cards);
-    })
+module.exports.getCards = (req, res, next) => {
+  Card.find({})
+    .populate(['owner', 'likes'])
+    .then((cards) => res.send(cards))
     .catch(next);
 };
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
-
-  cardSchema.create({ name, link, owner: req.user._id })
-    .then((card) => {
-      res.status(200).send(card);
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next ( new ValidationError('Переданы некорректные данные при создании'));
-      }
-    });
+  const owner = req.user._id;
+  cardSchema.create({ name, link, owner })
+    .then((card) => Card.findById(card._id)
+      .populate(['owner', 'likes'])
+      .then((card) => res.send(card))
+      .catch((err) => {
+        if (err.name === 'ValidationError' || err.name === 'CastError') {
+          throw new BadRequestError('Переданы некорректные данные');
+        }
+      })
+      .catch(next))
+    .catch(next);
 };
 
+/////////////////////////////////////////////////
 module.exports.deleteCard = (req, res, next) => {
   cardSchema.findById(req.params.cardId)
     .orFail(new Error('WrongCarId'))
