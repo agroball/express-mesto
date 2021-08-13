@@ -4,6 +4,7 @@ const express = require('express');
 const { PORT = 3000 } = process.env;
 const mongoose = require('mongoose');
 const helmet = require('helmet');
+const { errors } = require('celebrate');
 const usersRouter = require('./routes/users');
 const cardsRouter = require('./routes/cards');
 const { login, createUser } = require('./controllers/users');
@@ -23,7 +24,6 @@ mongoose.connect('mongodb://localhost:27017/mestodb', {
 
 app.use(helmet());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
 app.post('/signup', validationSignUp, createUser);
 app.post('/signin', validationSignIn, login);
@@ -31,6 +31,7 @@ app.post('/signin', validationSignIn, login);
 app.use(auth);
 app.use('/', usersRouter);
 app.use('/', cardsRouter);
+app.use(errors());
 app.use('*', (req, res, next) => next(new NotFoundError('Ресурс не найден')));
 app.use(errorAll);
 
