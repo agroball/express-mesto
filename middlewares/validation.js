@@ -15,6 +15,12 @@ const validateUserId = celebrate({
   }),
 });
 
+const validationCardId = celebrate({
+  params: Joi.object().keys({
+    cardId: Joi.string().alphanum().hex().length(24),
+  }),
+});
+
 const validateUserInfo = celebrate({
   body: Joi.object().keys({
     name: Joi.string().required().min(2).max(30),
@@ -28,24 +34,24 @@ const validateUserAvatar = celebrate({
   }),
 });
 
-const validateCard = celebrate({
+const validateCardCreate = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    link: Joi.string().required().pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/),
+    name: Joi.string().required().min(2).max(30),
+    link: Joi.string().required().custom(method),
   }),
 });
 
-const validateNewUser = celebrate({
+const validationSignUp = celebrate({
   body: Joi.object().keys({
     name: Joi.string().min(2).max(30),
-    about: Joi.string().min(2).max(20),
-    avatar: Joi.string().pattern(/https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\\+.~#?&//=]*)/),
-    email: Joi.string().email().required(),
-    password: Joi.string().required().min(8).max(35),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().custom(method),
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(2),
   }),
 });
 
-const validateLogin = celebrate({
+const validationSignIn = celebrate({
   body: Joi.object().keys({
     email: Joi.string().required().email(),
     password: Joi.string().required().min(8),
@@ -54,9 +60,10 @@ const validateLogin = celebrate({
 
 module.exports = {
   validateUserId,
+  validationCardId,
   validateUserInfo,
   validateUserAvatar,
-  validateCard,
-  validateNewUser,
-  validateLogin,
+  validateCardCreate,
+  validationSignUp,
+  validationSignIn,
 };
