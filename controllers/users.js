@@ -6,7 +6,8 @@ const AuthError = require('../errors/authError');
 const BadRequestError = require('../errors/BadRequest');
 const EmailError = require('../errors/EmailError');
 
-const { JWT_SECRET_KEY = 'secret_key' } = process.env;
+const { NODE_ENV, JWT_SECRET } = process.env;
+
 const opts = { new: true, runValidators: true };
 
 module.exports.getUsers = (req, res, next) => {
@@ -121,7 +122,7 @@ module.exports.login = (req, res, next) => {
         if (!isValid) {
           next(new AuthError('Пароль некорректный'));
         }
-        const userToken = jwt.sign({ _id: user._id }, JWT_SECRET_KEY, {
+        const userToken = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', {
           expiresIn: '7d',
         });
         res.send({ token: userToken });
